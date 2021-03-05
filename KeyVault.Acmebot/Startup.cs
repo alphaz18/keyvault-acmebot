@@ -85,6 +85,11 @@ namespace KeyVault.Acmebot
                 var options = provider.GetRequiredService<IOptions<AcmebotOptions>>().Value;
                 var environment = provider.GetRequiredService<AzureEnvironment>();
 
+                if (options.SimpleDNSPlus != null)
+                {
+                    return new SimpleDNSPlusProvider(options.SimpleDNSPlus);
+                }
+
                 if (options.Cloudflare != null)
                 {
                     return new CloudflareProvider(options.Cloudflare);

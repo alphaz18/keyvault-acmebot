@@ -1,0 +1,275 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+      "appNamePrefix": {
+        "type": "string",
+        "maxLength": 14,
+        "metadata": {
+          "description": "The name of the function app that you wish to create."
+        }
+      },
+      "mailAddress": {
+        "type": "string",
+        "metadata": {
+          "description": "Email address for ACME account."
+        }
+      },
+      "acmeEndpoint": {
+        "type": "string",
+        "allowedValues": [
+          "https://acme-v02.api.letsencrypt.org/",
+          "https://api.buypass.com/acme/",
+          "https://acme.zerossl.com/v2/DV90/"
+        ],
+        "defaultValue": "https://acme-v02.api.letsencrypt.org/",
+        "metadata": {
+          "description": "Certification authority ACME Endpoint."
+        }
+      },
+      "createWithKeyVault": {
+        "type": "bool",
+        "defaultValue": true,
+        "allowedValues": [
+          true,
+          false
+        ],
+        "metadata": {
+          "description": "If you choose true, create and configure a key vault at the same time."
+        }
+      },
+      "keyVaultSkuName": {
+        "type": "string",
+        "defaultValue": "Standard",
+        "allowedValues": [
+          "Standard",
+          "Premium"
+        ],
+        "metadata": {
+          "description": "Specifies whether the key vault is a standard vault or a premium vault."
+        }
+      },
+      "enableRbacAuthorization": {
+        "type": "bool",
+        "defaultValue": false,
+        "allowedValues": [
+          true,
+          false
+        ],
+        "metadata": {
+          "description": "If you select true, RBAC will be used instead of Key Vault access policy"
+        }
+      },
+      "keyVaultBaseUrl": {
+        "type": "string",
+        "defaultValue": "",
+        "metadata": {
+          "description": "Enter the base URL of an existing Key Vault. (ex. https://example.vault.azure.net)"
+        }
+      },
+      "roleNameGuid": {
+        "type": "string",
+        "defaultValue": "[newGuid()]",
+        "metadata": {
+          "description": "A new GUID used to identify the role assignment"
+        }
+      }
+    },
+    "variables": {
+      "functionAppName": "[concat('func-', parameters('appNamePrefix'), '-', substring(uniquestring(resourceGroup().id, deployment().name), 0, 4))]",
+      "appServicePlanName": "[concat('plan-', parameters('appNamePrefix'), '-', substring(uniquestring(resourceGroup().id, deployment().name), 0, 4))]",
+      "appInsightsName": "[concat('appi-', parameters('appNamePrefix'), '-', substring(uniquestring(resourceGroup().id, deployment().name), 0, 4))]",
+      "storageAccountName": "[concat('st', uniquestring(resourceGroup().id, deployment().name), 'func')]",
+      "storageAccountId": "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]",
+      "keyVaultName": "[concat('kv-', parameters('appNamePrefix'), '-', substring(uniquestring(resourceGroup().id, deployment().name), 0, 4))]",
+      "keyVaultSkuName": "[parameters('keyVaultSkuName')]",
+      "mailAddress": "[parameters('mailAddress')]",
+      "acmeEndpoint": "[parameters('acmeEndpoint')]",
+      "vaultBaseUrl": "[parameters('keyVaultBaseUrl')]",
+      "appInsightsEndpoints": {
+        "AzureCloud": "applicationinsights.azure.com",
+        "AzureChinaCloud": "applicationinsights.azure.cn",
+        "AzureUSGovernment": "applicationinsights.us"
+      }
+    },
+    "resources": [
+      {
+        "type": "Microsoft.Storage/storageAccounts",
+        "name": "[variables('storageAccountName')]",
+        "apiVersion": "2019-06-01",
+        "location": "[resourceGroup().location]",
+        "kind": "Storage",
+        "sku": {
+          "name": "Standard_LRS"
+        },
+        "properties": {
+          "supportsHttpsTrafficOnly": true,
+          "allowBlobPublicAccess": false
+        }
+      },
+      {
+        "type": "Microsoft.Web/serverfarms",
+        "name": "[variables('appServicePlanName')]",
+        "apiVersion": "2020-06-01",
+        "location": "[resourceGroup().location]",
+        "sku": {
+          "name": "Y1",
+          "tier": "Dynamic",
+          "size": "Y1",
+          "family": "Y"
+        }
+      },
+      {
+        "type": "Microsoft.Insights/components",
+        "name": "[variables('appInsightsName')]",
+        "apiVersion": "2015-05-01",
+        "location": "[resourceGroup().location]",
+        "tags": {
+          "[concat('hidden-link:', resourceGroup().id, '/providers/Microsoft.Web/sites/', variables('functionAppName'))]": "Resource"
+        },
+        "properties": {
+          "Application_Type": "web",
+          "applicationId": "[variables('appInsightsName')]"
+        }
+      },
+      {
+        "type": "Microsoft.Web/sites",
+        "name": "[variables('functionAppName')]",
+        "apiVersion": "2020-06-01",
+        "location": "[resourceGroup().location]",
+        "kind": "functionapp",
+        "identity": {
+          "type": "SystemAssigned"
+        },
+        "dependsOn": [
+          "[resourceId('Microsoft.Web/serverfarms', variables('appServicePlanName'))]",
+          "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]",
+          "[resourceId('Microsoft.Insights/components', variables('appInsightsName'))]"
+        ],
+        "properties": {
+          "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('appServicePlanName'))]",
+          "siteConfig": {
+            "appSettings": [
+              {
+                "name": "APPLICATIONINSIGHTS_CONNECTION_STRING",
+                "value": "[concat('InstrumentationKey=', reference(resourceId('Microsoft.Insights/components', variables('appInsightsName')), '2015-05-01').InstrumentationKey, ';EndpointSuffix=', variables('appInsightsEndpoints')[environment().name])]"
+              },
+              {
+                "name": "AzureWebJobsStorage",
+                "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccountName'), ';AccountKey=', listKeys(variables('storageAccountId'), '2018-11-01').keys[0].value, ';EndpointSuffix=', environment().suffixes.storage)]"
+              },
+              {
+                "name": "WEBSITE_CONTENTAZUREFILECONNECTIONSTRING",
+                "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccountName'), ';AccountKey=', listKeys(variables('storageAccountId'), '2018-11-01').keys[0].value, ';EndpointSuffix=', environment().suffixes.storage)]"
+              },
+              {
+                "name": "WEBSITE_CONTENTSHARE",
+                "value": "[toLower(variables('functionAppName'))]"
+              },
+              {
+                "name": "WEBSITE_RUN_FROM_PACKAGE",
+                "value": "https://stbvctestingdev001.blob.core.windows.net/acmevault/acmevaultfork.zip"
+              },
+              {
+                "name": "FUNCTIONS_EXTENSION_VERSION",
+                "value": "~3"
+              },
+              {
+                "name": "FUNCTIONS_WORKER_RUNTIME",
+                "value": "dotnet"
+              },
+              {
+                "name": "Acmebot:Contacts",
+                "value": "[variables('mailAddress')]"
+              },
+              {
+                "name": "Acmebot:Endpoint",
+                "value": "[variables('acmeEndpoint')]"
+              },
+              {
+                "name": "Acmebot:VaultBaseUrl",
+                "value": "[if(parameters('createWithKeyVault'), concat('https://', variables('keyVaultName'), environment().suffixes.keyvaultDns), variables('vaultBaseUrl'))]"
+              },
+              {
+                "name": "Acmebot:Environment",
+                "value": "[environment().name]"
+              }
+            ],
+            "clientAffinityEnabled": false
+          },
+          "ftpsState": "Disabled",
+          "httpsOnly": true
+        },
+        "resources": [
+          {
+            "apiVersion": "2020-06-01",
+            "name": "metadata",
+            "type": "config",
+            "dependsOn": [
+              "[resourceId('Microsoft.Web/sites', variables('functionAppName'))]"
+            ],
+            "properties": {
+              "synctriggersstatus": "[listsyncfunctiontriggerstatus(resourceId('Microsoft.Web/sites', variables('functionAppName')), '2020-06-01').status]"
+            }
+          }
+        ]
+      },
+      {
+        "type": "Microsoft.KeyVault/vaults",
+        "name": "[variables('keyVaultName')]",
+        "apiVersion": "2019-09-01",
+        "location": "[resourceGroup().location]",
+        "condition": "[parameters('createWithKeyVault')]",
+        "dependsOn": [
+          "[resourceId('Microsoft.Web/sites', variables('functionAppName'))]"
+        ],
+        "properties": {
+          "tenantId": "[subscription().tenantId]",
+          "sku": {
+            "family": "A",
+            "name": "[variables('keyVaultSkuName')]"
+          },
+          "accessPolicies": [
+            {
+              "objectId": "[reference(resourceId('Microsoft.Web/sites', variables('functionAppName')), '2020-06-01', 'Full').identity.principalId]",
+              "tenantId": "[subscription().tenantId]",
+              "permissions": {
+                "certificates": [ "get", "list", "create", "update" ]
+              }
+            }
+          ],
+          "enableRbacAuthorization": "[parameters('enableRbacAuthorization')]"
+        }
+      },
+      {
+        "type": "Microsoft.Authorization/roleAssignments",
+        "name": "[parameters('roleNameGuid')]",
+        "apiVersion": "2020-04-01-preview",
+        "condition": "[and(parameters('createWithKeyVault'), parameters('enableRbacAuthorization'))]",
+        "scope": "[concat('Microsoft.KeyVault/vaults', '/', variables('keyVaultName'))]",
+        "dependsOn": [
+          "[resourceId('Microsoft.KeyVault/vaults', variables('keyVaultName'))]"
+        ],
+        "properties": {
+          "roleDefinitionId": "[resourceId('Microsoft.Authorization/roleDefinitions/', 'a4417e6f-fecd-4de8-b567-7b0420556985')]",
+          "principalId": "[reference(resourceId('Microsoft.Web/sites', variables('functionAppName')), '2020-06-01', 'Full').identity.principalId]"
+        }
+      }
+    ],
+    "outputs": {
+      "functionAppName": {
+        "type": "string",
+        "value": "[variables('functionAppName')]"
+      },
+      "identity": {
+        "type": "object",
+        "value": "[reference(resourceId('Microsoft.Web/sites', variables('functionAppName')), '2020-06-01', 'Full').identity]"
+      },
+      "keyVaultName": {
+        "type": "string",
+        "condition": "[parameters('createWithKeyVault')]",
+        "value": "[variables('keyVaultName')]"
+      }
+    }
+  }
+  

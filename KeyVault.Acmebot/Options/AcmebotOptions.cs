@@ -42,6 +42,8 @@ namespace KeyVault.Acmebot.Options
 
         public Route53Options Route53 { get; set; }
 
+        public SimpleDNSPlusOptions SimpleDNSPlus { get; set; }
+
         public TransIpOptions TransIp { get; set; }
     }
 }
