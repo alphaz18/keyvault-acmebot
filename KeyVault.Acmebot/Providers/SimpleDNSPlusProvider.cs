@@ -39,11 +39,11 @@ namespace KeyVault.Acmebot.Providers
             {
                 await _client.AddRecordAsync(zone.Id, new DnsEntry
                 {
-                    Name = relativeRecordName,
+                    Name = $"{relativeRecordName}.{zone.Id}",
                     Type = "TXT",
                     Expire = 60,
                     Content = value,
-                    Remove = "false"
+                    Remove = false
                 });
             }
         }
@@ -52,11 +52,11 @@ namespace KeyVault.Acmebot.Providers
         {
             var records = await _client.ListRecordsAsync(zone.Id);
 
-            var recordsToDelete = records.Where(r => r.Name == relativeRecordName && r.Type == "TXT");
+            var recordsToDelete = records.Where(r => r.Name == ($"{relativeRecordName}.{zone.Id}") && r.Type == "TXT");
 
             foreach (var record in recordsToDelete)
             {
-                record.Remove = "true";
+                record.Remove = true;
                 await _client.DeleteRecordAsync(zone.Id, record);
             }
         }
@@ -203,7 +203,7 @@ namespace KeyVault.Acmebot.Providers
             public string Content { get; set; }
 
             [JsonProperty("Remove")]
-            public string Remove { get; set; }
+            public bool Remove { get; set; }
         }
     }
 }

@@ -9,6 +9,27 @@
           "description": "The name of the function app that you wish to create."
         }
       },
+      "environment": {
+        "type": "string",
+        "maxLength": 4,
+        "metadata": {
+          "description": "dev or prod"
+        }
+      },
+      "instanceNumber": {
+        "type": "string",
+        "maxLength": 3,
+        "metadata": {
+          "description": "last 3 digits of resource names, most often 001."
+        }
+      },
+      "appPlanName": {
+        "type": "string",
+        "maxLength": 30,
+        "metadata": {
+          "description": "The name of the App Service Plan you wish to use, if empty, it will create a consumption plan."
+        }
+      },
       "mailAddress": {
         "type": "string",
         "metadata": {
@@ -76,12 +97,12 @@
       }
     },
     "variables": {
-      "functionAppName": "[concat('func-', parameters('appNamePrefix'), '-', substring(uniquestring(resourceGroup().id, deployment().name), 0, 4))]",
-      "appServicePlanName": "[concat('plan-', parameters('appNamePrefix'), '-', substring(uniquestring(resourceGroup().id, deployment().name), 0, 4))]",
-      "appInsightsName": "[concat('appi-', parameters('appNamePrefix'), '-', substring(uniquestring(resourceGroup().id, deployment().name), 0, 4))]",
-      "storageAccountName": "[concat('st', uniquestring(resourceGroup().id, deployment().name), 'func')]",
+      "functionAppName": "[concat('func-', parameters('appNamePrefix'), '-', parameters('environment'), '-', parameters('instanceNumber'))]",
+      "appServicePlanName": "[if(greater(length(parameters('appPlanName')),0),parameters('appPlanName'),concat('asp-', parameters('appNamePrefix'), '-', substring(uniquestring(resourceGroup().id, deployment().name), 0, 4)))]",
+      "appInsightsName": "[concat('appi-', parameters('appNamePrefix'), '-', parameters('environment'), '-', parameters('instanceNumber'))]",
+      "storageAccountName": "[concat('st', parameters('appNamePrefix'),parameters('environment'), parameters('instanceNumber'))]",
       "storageAccountId": "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]",
-      "keyVaultName": "[concat('kv-', parameters('appNamePrefix'), '-', substring(uniquestring(resourceGroup().id, deployment().name), 0, 4))]",
+      "keyVaultName": "[concat('kv-', parameters('appNamePrefix'), '-', parameters('environment'), '-', parameters('instanceNumber'))]",
       "keyVaultSkuName": "[parameters('keyVaultSkuName')]",
       "mailAddress": "[parameters('mailAddress')]",
       "acmeEndpoint": "[parameters('acmeEndpoint')]",
@@ -110,6 +131,7 @@
       {
         "type": "Microsoft.Web/serverfarms",
         "name": "[variables('appServicePlanName')]",
+        "condition": "[equals(length(parameters('appPlanName')),0)]",
         "apiVersion": "2020-06-01",
         "location": "[resourceGroup().location]",
         "sku": {
