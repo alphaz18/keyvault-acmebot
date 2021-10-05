@@ -17,20 +17,6 @@ We have started to address the following requirements:
 
 Key Vault allows for secure and centralized management of ACME certificates.
 
-## Announcements
-
-### Upgrade to Acmebot v3
-
-Key Vault Acmebot v3 has been released since December 31, 2019. Users deploying earlier than this are encouraged to upgrade to v3 by following the ugprade process described here:
-
-https://github.com/shibayan/keyvault-acmebot/issues/80
-
-### Automate Azure CDN / Front Door certificates deployment
-
-As of August 2020, Azure CDN / Front Door does not automatically deploy new Key Vault certificates. I develop an utility application to automatically deploy a new version of the certificate.
-
-https://github.com/shibayan/keyvault-certificate-rotation
-
 ## Table Of Contents
 
 - [Feature Support](#feature-support)
@@ -39,6 +25,7 @@ https://github.com/shibayan/keyvault-certificate-rotation
 - [Usage](#usage)
 - [Frequently Asked Questions](#frequently-asked-questions)
 - [Thanks](#thanks)
+- [Sponsors](#sponsors)
 - [License](#license)
 
 ## Feature Support
@@ -46,10 +33,10 @@ https://github.com/shibayan/keyvault-certificate-rotation
 - All Azure App Services (Web Apps / Functions / Containers, regardless of OS)
 - Azure CDN and Front Door
 - Azure Application Gateway v2
+- Issuing certificates for Wildcard and Zone Apex
 - Issuing certificates with SANs (subject alternative names) (one certificate for multiple domains)
-- Issuing certificates and wildcard certificates for Zone Apex domains
 - Automated certificate renewal
-- ACME-compliant Certification Authorities
+- ACME v2 compliants Certification Authorities
   - [Let's Encrypt](https://letsencrypt.org/)
   - [Buypass Go SSL](https://www.buypass.com/ssl/resources/acme-free-ssl)
   - [ZeroSSL](https://zerossl.com/features/acme/) (Requires EAB Credentials)
@@ -61,36 +48,15 @@ You will need the following:
 - Azure Subscription (required to deploy this solution)
 - Azure Key Vault (existing one or new Key Vault can be created at deployment time)
 - DNS provider (required to host your public DNS zone)
-  - Amazon Route 53
-  - Azure DNS (The resource must be unlocked)
-  - Cloudflare
-  - DNS Made Easy
-  - Google Cloud DNS
-  - GratisDNS
-  - TransIP DNS
 - Email address (required to register with ACME)
 
 ## Getting Started
 
 ### 1. Deploy Acmebot
 
-For Azure Cloud
-
-<a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fshibayan%2Fkeyvault-acmebot%2Fmaster%2Fazuredeploy.json" target="_blank">
-  <img src="https://aka.ms/deploytoazurebutton" />
-</a>
-
-For Azure China
-
-<a href="https://portal.azure.cn/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fshibayan%2Fkeyvault-acmebot%2Fmaster%2Fazuredeploy.json" target="_blank">
-  <img src="https://aka.ms/deploytoazurebutton" />
-</a>
-
-For Azure Government
-
-<a href="https://portal.azure.us/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fshibayan%2Fkeyvault-acmebot%2Fmaster%2Fazuredeploy.json" target="_blank">
-  <img src="https://aka.ms/deploytoazurebutton" />
-</a>
+| Azure (Public) | Azure China | Azure Government |
+| :---: | :---: | :---: |
+| <a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fshibayan%2Fkeyvault-acmebot%2Fmaster%2Fazuredeploy.json" target="_blank"><img src="https://aka.ms/deploytoazurebutton" /></a> | <a href="https://portal.azure.cn/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fshibayan%2Fkeyvault-acmebot%2Fmaster%2Fazuredeploy.json" target="_blank"><img src="https://aka.ms/deploytoazurebutton" /></a> | <a href="https://portal.azure.us/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fshibayan%2Fkeyvault-acmebot%2Fmaster%2Fazuredeploy.json" target="_blank"><img src="https://aka.ms/deploytoazurebutton" /></a> |
 
 ### 2. Add application settings
 
@@ -100,6 +66,7 @@ Update the following configuration settings of the Function App:
   - DNS name of the Azure Key Vault (if you are using an existing Key Vault)
 - `Acmebot:Webhook`
   - Webhook destination URL (optional, Slack and Microsoft Teams are recommended)
+  - Message will be sent when the process succeeds or fails
 
 There are also additional settings that will be automatically created by Key Vault Acmebot:
 
@@ -114,17 +81,28 @@ For instructions on how to configure each DNS provider, please refer to the foll
 
 https://github.com/shibayan/keyvault-acmebot/wiki/DNS-Provider-Configuration
 
+#### Supported DNS providers
+
+- Amazon Route 53
+- Azure DNS
+- Cloudflare
+- DNS Made Easy
+- GoDaddy
+- Google Cloud DNS
+- GratisDNS
+- TransIP DNS
+
 ### 4. Enable App Service Authentication
 
 You must enable Authentication on the Function App that is deployed as part of this application.
 
-In the Azure Portal, open the Function blade then select the `Authentication / Authorization` menu and enable App Service authentication. Select the `Login with Azure Active Directory` as the action to perform if the request is not authenticated. We recommend using Azure Active Directory as your authentication provider, but it works with other providers as well, although it's not supported.
+In the Azure Portal, open the Function blade then select the `Authentication` menu and enable App Service authentication. Click on the `Add identity provider` button to display the screen for adding a new identity provider. If you select `Microsoft` as your Identity provider, the required settings will be automatically filled in for you. The default settings are fine.
 
-![Enable App Service Authentication with AAD](https://user-images.githubusercontent.com/1356444/49693401-ecc7c400-fbb4-11e8-9ae1-5d376a4d8a05.png)
+![Add an Identity provider](https://user-images.githubusercontent.com/1356444/117532648-79e00300-b023-11eb-8cf1-92a11ffb115a.png)
 
-Select Azure Active Directory as the authentication provider, select `Express` as the management mode, and select OK.
+Make sure that the App Service Authentication setting is set to `Require authentication`. The permissions can basically be left at the default settings.
 
-![Create New Azure AD App](https://user-images.githubusercontent.com/1356444/49693412-6f508380-fbb5-11e8-81fb-6bbcbe47654e.png)
+![App Service Authentication settings](https://user-images.githubusercontent.com/1356444/117532660-8c5a3c80-b023-11eb-8573-df2e418d5c2f.png)
 
 If you are using Sovereign Cloud, you may not be able to select Express. Enable authentication from the advanced settings with reference to the following document.
 
@@ -156,49 +134,21 @@ The default check timing is 00:00 UTC. If you need to change the time zone, use 
 
 ### How to use the issued certificate in Azure services
 
-#### App Service (Web Apps / Functions / Containers)
-
-You can import the Key Vault certificate to the App Service by opening the `TLS/SSL Settings` from Azure Portal and selecting the `Import Key Vault Certificate` button from the `Private Key Certificate (.pfx)`.
-
-![image](https://user-images.githubusercontent.com/1356444/64438173-974c2380-d102-11e9-88c0-5ed34a5ce42a.png)
-
-After importing, the App Service will automatically check for certificate updates.
-
-#### Application Gateway v2
-
-- https://docs.microsoft.com/en-us/azure/application-gateway/key-vault-certs
-
-#### Azure CDN
-
-- https://docs.microsoft.com/en-us/azure/cdn/cdn-custom-ssl?tabs=option-2-enable-https-with-your-own-certificate
-
-#### Azure Front Door
-
-- https://docs.microsoft.com/en-us/azure/frontdoor/front-door-custom-domain-https#option-2-use-your-own-certificate
-
-#### API Management
-
-- https://docs.microsoft.com/en-us/azure/api-management/configure-custom-domain
-
-#### Other services
-
-The issued certificate can be downloaded from Key Vault and used elsewhere, either in Azure or outside Azure.
+See also https://github.com/shibayan/keyvault-acmebot/wiki/How-to-use-in-Azure-services
 
 ## Frequently Asked Questions
 
-### Remove a Certificate
-
-To Remove a certificate from the system delete it from the Key Vault. Key Vault Acmebot will no longer renew the certificate.
-
-### Reinstalling Or Updating Key Vault Acmebot
-
-To Reinstall or Upgrade Key Vault Acmebot without removing your certificates, ensure that the Key Vault is not removed. Key Vault Acmebot will use the exisiting certificates and vault after upgrade or reinstall
+See also https://github.com/shibayan/keyvault-acmebot/wiki/Frequently-Asked-Questions
 
 ## Thanks
 
 - [ACMESharp Core](https://github.com/PKISharp/ACMESharpCore) by @ebekker
 - [Durable Functions](https://github.com/Azure/azure-functions-durable-extension) by @cgillum and contributors
 - [DnsClient.NET](https://github.com/MichaCo/DnsClient.NET) by @MichaCo
+
+## Sponsors
+
+[![ZEN Architects](docs/images/zenarchitects.png)](https://zenarchitects.co.jp)
 
 ## License
 
