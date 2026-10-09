@@ -174,6 +174,14 @@ Acmebot uses the Google Cloud DNS read/write OAuth scope and ignores private man
 
 The AWS role or access key credentials require permission to list hosted zones, list record sets, and change record sets in the target hosted zone.
 
+### SimpleDNS Plus
+
+| Setting | Description |
+| --- | --- |
+| `Acmebot__SimpleDnsPlus__RootApiUrl` | Base URL of the SimpleDNS Plus API. |
+| `Acmebot__SimpleDnsPlus__ApiKeyUser` | API user name used for HTTP Basic authentication. |
+| `Acmebot__SimpleDnsPlus__SecretKey` | Secret key for the API user. |
+
 ### TransIP DNS
 
 | Setting | Description |

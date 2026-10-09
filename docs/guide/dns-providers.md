@@ -46,6 +46,7 @@ Reference: [Use Key Vault references in App Service and Azure Functions](https:/
 | PowerDNS | `Acmebot__PowerDns` | `Endpoint`, `ApiKey` | 30 seconds |
 | Regfish | `Acmebot__Regfish` | `ApiKey` | 30 seconds |
 | Amazon Route 53 | `Acmebot__Route53` | `RoleArn` or `AccessKey`, `SecretKey` | 10 seconds |
+| SimpleDNS Plus | `Acmebot__SimpleDnsPlus` | `RootApiUrl`, `ApiKeyUser`, `SecretKey` | 10 seconds |
 | TransIP DNS | `Acmebot__TransIp` | `CustomerName`, `PrivateKeyName` | 360 seconds |
 | UnitedDomains | `Acmebot__UnitedDomains` | `ApiKey` | 60 seconds |
 
@@ -382,6 +383,22 @@ Example IAM policy scoped to one hosted zone:
     }
   ]
 }
+```
+
+## SimpleDNS Plus
+
+Use SimpleDNS Plus when you operate a SimpleDNS Plus server with its REST API enabled. Acmebot lists zones with `GET zones`, lists records with `GET zones/{zone}/records`, and adds or removes TXT records by sending `PATCH zones/{zone}/records`.
+
+| Option | Description |
+| --- | --- |
+| `RootApiUrl` | Base URL of the SimpleDNS Plus API. |
+| `ApiKeyUser` | API user name, sent with the secret key as HTTP Basic authentication. |
+| `SecretKey` | Secret key for the API user. |
+
+```text
+Acmebot__SimpleDnsPlus__RootApiUrl=https://dns.example.com/api/
+Acmebot__SimpleDnsPlus__ApiKeyUser=<api-key-user>
+Acmebot__SimpleDnsPlus__SecretKey=<secret-key>
 ```
 
 ## TransIP DNS

@@ -60,6 +60,8 @@ public class AcmebotOptions
 
     public Route53Options? Route53 { get; set; }
 
+    public SimpleDnsPlusOptions? SimpleDnsPlus { get; set; }
+
     public TransIpOptions? TransIp { get; set; }
 
     public UnitedDomainsOptions? UnitedDomains { get; set; }

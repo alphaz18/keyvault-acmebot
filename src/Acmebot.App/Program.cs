@@ -183,6 +183,7 @@ builder.Services.AddSingleton<IEnumerable<IDnsProvider>>(provider =>
         o,
         environment.ResourceManager.Audience,
         ResolveCredential(environment, tokenCredential, o.ManagedIdentityClientId)));
+    dnsProviders.TryAdd(options.SimpleDnsPlus, o => new SimpleDnsPlusProvider(o));
     dnsProviders.TryAdd(options.TransIp, o => new TransIpProvider(options, o, tokenCredential));
     dnsProviders.TryAdd(options.UnitedDomains, o => new UnitedDomainsProvider(o));
 
