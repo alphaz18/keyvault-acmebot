@@ -469,6 +469,11 @@
                     "value": "Regfish"
                   },
                   {
+                    "label": "SimpleDNS Plus",
+                    "description": "Use a SimpleDNS Plus server with its REST API enabled.",
+                    "value": "SimpleDnsPlus"
+                  },
+                  {
                     "label": "TransIP DNS",
                     "description": "Use TransIP DNS with a customer name and Key Vault key name.",
                     "value": "TransIp"
@@ -1135,6 +1140,57 @@
               "visible": "[if(equals(steps('dnsProviderStep').providerType, 'Regfish'), true, false)]"
             },
             {
+              "name": "simpleDnsPlusSection",
+              "type": "Microsoft.Common.Section",
+              "label": "SimpleDNS Plus",
+              "elements": [
+                {
+                  "name": "rootApiUrl",
+                  "type": "Microsoft.Common.TextBox",
+                  "label": "API URL",
+                  "placeholder": "https://dns.example.com/api/",
+                  "toolTip": "Base URL of the SimpleDNS Plus API.",
+                  "constraints": {
+                    "required": true,
+                    "validations": [
+                      {
+                        "regex": "^https?:\\/\\/.+",
+                        "message": "Enter a valid http(s) URL."
+                      }
+                    ]
+                  },
+                  "visible": true
+                },
+                {
+                  "name": "apiKeyUser",
+                  "type": "Microsoft.Common.TextBox",
+                  "label": "API key user",
+                  "toolTip": "API user name used for HTTP Basic authentication.",
+                  "constraints": {
+                    "required": true
+                  },
+                  "visible": true
+                },
+                {
+                  "name": "secretKey",
+                  "type": "Microsoft.Common.PasswordBox",
+                  "label": {
+                    "password": "Secret key",
+                    "confirmPassword": "Confirm secret key"
+                  },
+                  "toolTip": "Secret key for the API user.",
+                  "constraints": {
+                    "required": true
+                  },
+                  "options": {
+                    "hideConfirmation": true
+                  },
+                  "visible": true
+                }
+              ],
+              "visible": "[if(equals(steps('dnsProviderStep').providerType, 'SimpleDnsPlus'), true, false)]"
+            },
+            {
               "name": "transIpSection",
               "type": "Microsoft.Common.Section",
               "label": "TransIP DNS",
@@ -1444,6 +1500,11 @@
           },
           "regfish": {
             "apiKey": "[if(equals(steps('dnsProviderStep').providerType, 'Regfish'), steps('dnsProviderStep').regfishSection.apiKey, '')]"
+          },
+          "simpleDnsPlus": {
+            "rootApiUrl": "[if(equals(steps('dnsProviderStep').providerType, 'SimpleDnsPlus'), steps('dnsProviderStep').simpleDnsPlusSection.rootApiUrl, '')]",
+            "apiKeyUser": "[if(equals(steps('dnsProviderStep').providerType, 'SimpleDnsPlus'), steps('dnsProviderStep').simpleDnsPlusSection.apiKeyUser, '')]",
+            "secretKey": "[if(equals(steps('dnsProviderStep').providerType, 'SimpleDnsPlus'), steps('dnsProviderStep').simpleDnsPlusSection.secretKey, '')]"
           },
           "transIp": {
             "customerName": "[if(equals(steps('dnsProviderStep').providerType, 'TransIp'), steps('dnsProviderStep').transIpSection.customerName, '')]",

@@ -141,6 +141,7 @@ var ionosDnsProvider = dnsProvider.?ionosDns ?? {}
 var ovhProvider = dnsProvider.?ovh ?? {}
 var powerDnsProvider = dnsProvider.?powerDns ?? {}
 var regfishProvider = dnsProvider.?regfish ?? {}
+var simpleDnsPlusProvider = dnsProvider.?simpleDnsPlus ?? {}
 var transIpProvider = dnsProvider.?transIp ?? {}
 var unitedDomainsProvider = dnsProvider.?unitedDomains ?? {}
 var dnsProviderType = dnsProvider.?type ?? ''
@@ -286,6 +287,19 @@ var dnsProviderAppSettings = dnsProviderType == 'Akamai' ? [
   {
     name: 'Acmebot__Regfish__ApiKey'
     value: regfishProvider.?apiKey ?? ''
+  }
+] : dnsProviderType == 'SimpleDnsPlus' ? [
+  {
+    name: 'Acmebot__SimpleDnsPlus__RootApiUrl'
+    value: simpleDnsPlusProvider.?rootApiUrl ?? ''
+  }
+  {
+    name: 'Acmebot__SimpleDnsPlus__ApiKeyUser'
+    value: simpleDnsPlusProvider.?apiKeyUser ?? ''
+  }
+  {
+    name: 'Acmebot__SimpleDnsPlus__SecretKey'
+    value: simpleDnsPlusProvider.?secretKey ?? ''
   }
 ] : dnsProviderType == 'TransIp' ? [
   {
